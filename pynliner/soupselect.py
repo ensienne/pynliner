@@ -16,7 +16,7 @@ select(soup, 'div#main ul a')
 
 import re
 
-tag_re = re.compile('^[a-z0-9]+$')
+tag_re = re.compile('^[a-zA-Z0-9]+$')
 
 attribselect_re = re.compile(
     r'^(?P<tag>\w+)?\[(?P<attribute>\w+)(?P<operator>[=~\|\^\$\*]?)' + 
@@ -66,8 +66,11 @@ def select(soup, selector):
             tag, attribute, operator, value = m.groups()
             if not tag:
                 tag = True
+            else:
+                tag = re.compile("^%s$" % tag, re.I) # case insensitive search
             checker = attribute_checker(operator, attribute, value)
             found = []
+
             for context in current_context:
                 found.extend([el for el in context.findAll(tag) if checker(el)])
             current_context = found
@@ -77,6 +80,8 @@ def select(soup, selector):
             tag, id = token.split('#', 1)
             if not tag:
                 tag = True
+            else:
+                tag = re.compile("^%s$" % tag, re.I) # case insensitive search
             el = current_context[0].find(tag, {'id': id})
             if not el:
                 return [] # No match
@@ -87,11 +92,13 @@ def select(soup, selector):
             tag, klass = token.split('.', 1)
             if not tag:
                 tag = True
+            else:
+                tag = re.compile("^%s$" % tag, re.I) # case insensitive search
             found = []
             for context in current_context:
                 found.extend(
                     context.findAll(tag,
-                        {'class': lambda attr: attr and klass in attr.split()}
+                        {'class': lambda attr: attr and klass.lower() in [x.lower() for x in attr.split()]}
                     )
                 )
             current_context = found
@@ -107,6 +114,7 @@ def select(soup, selector):
         if not tag_re.match(token):
             return []
         found = []
+	token = re.compile("^%s$" % token, re.I) # case insensitive search
         for context in current_context:
             found.extend(context.findAll(token))
         current_context = found

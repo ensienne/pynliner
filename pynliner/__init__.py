@@ -12,7 +12,7 @@ import urllib2
 import cssutils
 from BeautifulSoup import BeautifulSoup
 from soupselect import select
-
+import re
 class Pynliner(object):
     """Pynliner class"""
 
@@ -69,7 +69,7 @@ class Pynliner(object):
             self.style_string += cssString + u'\n'
         return self
     
-    def run(self):
+    def run(self, prettify=False):
         """Applies each step of the process if they have not already been
         performed.
         
@@ -78,13 +78,15 @@ class Pynliner(object):
         >>> html = "<style>h1 { color:#ffcc00; }</style><h1>Hello World!</h1>"
         >>> Pynliner().from_string(html).run()
         u'<h1 style="color: #fc0">Hello World!</h1>'
+
+        Set prettify=True to output in tab indented form.
         """
         if not self.soup:
             self._get_soup()
         if not self.stylesheet:
             self._get_styles()
         self._apply_styles()
-        return self._get_output()
+        return self._get_output(prettify=prettify)
     
     def _get_url(self, url):
         """Returns the response content from the given url
@@ -139,19 +141,20 @@ class Pynliner(object):
             self.style_string += u'\n'.join(tag.contents) + u'\n'
             tag.extract()
     
-    def _apply_styles(self):
+    def _apply_styles(self, separator=' '):
         """Steps through CSS rules and applies each to all the proper elements
         as @style attributes prepending any current @style attributes.
         """
         rules = self.stylesheet.cssRules.rulesOfType(1)
         ruleDict = {}
         for rule in rules:
+
             for s in rule.selectorText.split(','):
                 if s in ruleDict:
-                    ruleDict[s] += '; ' + rule.style.cssText
+                    ruleDict[s] += '; ' + rule.style.getCssText(separator)
                 else:
-                    ruleDict[s] = rule.style.cssText
-        
+                    ruleDict[s] = rule.style.getCssText(separator)
+
         for selector in ruleDict:
             elements = select(self.soup, selector)
             for el in elements:
@@ -160,12 +163,15 @@ class Pynliner(object):
                 else:
                     el['style'] = ruleDict[selector]
     
-    def _get_output(self):
+    def _get_output(self, prettify=False):
         """Generate Unicode string of `self.soup` and set it to `self.output`
         
         Returns self.output
         """
-        self.output = unicode(self.soup)
+        if prettify:
+            self.output = self.soup.prettify()
+        else:
+            self.output = unicode(self.soup)
         return self.output
 
 def fromURL(url):

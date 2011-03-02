@@ -142,7 +142,7 @@ class CommaSelector(unittest.TestCase):
         desired_output = '<h1 style="color: #000">1</h1><h2 style="color: #000">2</h2><h3 style="color: #000">3</h3><h4 style="color: #000">4</h4>'
         output = Pynliner().from_string(html).run()
         self.assertEqual(output, desired_output)
-    
+
 class Extended(unittest.TestCase):
     
     def test_overwrite(self):
@@ -159,6 +159,44 @@ class Extended(unittest.TestCase):
         output = Pynliner().from_string(html).run()
         self.assertEqual(output, desired_output)
 
-   
+class CaseSensitive(unittest.TestCase):
+
+    def test_case_sensitive_tag(self):
+        """Test upper/lowercase tag names in style sheets"""
+        html = '<style>H1 {color: #000;}</style><H1 style="color: #fff">Foo</H1><h1>Bar</h1>'
+        desired_output = '<h1 style="color: #000; color: #fff">Foo</h1><h1 style="color: #000">Bar</h1>'
+        output = Pynliner().from_string(html).run()
+        self.assertEqual(output, desired_output)
+
+    def test_case_sensitive_tag_class(self):
+        """Test upper/lowercase tag names with class names"""
+        html = '<style>h1.b1 { font-weight:bold; } H1.c {color: red}</style><h1 class="b1">Bold</h1><H1 class="c">Bold Red</h1>'
+        desired_output = '<h1 class="b1" style="font-weight: bold">Bold</h1><h1 class="c" style="color: red">Bold Red</h1>'
+        output = Pynliner().from_string(html).run()
+        self.assertEqual(output, desired_output)
+
+    def test_case_sensitive_tag_id(self):
+        """Test case sensitivity of tags with class names"""
+        html = '<style>h1#tst { font-weight:bold; } H1#c {color: red}</style><h1 id="tst">Bold</h1><H1 id="c">Bold Red</h1>'
+        desired_output = '<h1 id="tst" style="font-weight: bold">Bold</h1><h1 id="c" style="color: red">Bold Red</h1>'
+        output = Pynliner().from_string(html).run()
+        self.assertEqual(output, desired_output)
+
+    def test_case_sensitive_class(self):
+        """Test case insensitivity of class names"""
+        html = '<style>h1.BOLD { font-weight:bold; }</style><h1 class="bold">Bold</h1><h1 class="BOLD">Bold</h1>'
+        desired_output = '<h1 class="bold" style="font-weight: bold">Bold</h1><h1 class="BOLD" style="font-weight: bold">Bold</h1>'
+        output = Pynliner().from_string(html).run()
+        self.assertEqual(output, desired_output)
+
+class NewlineSeparator(unittest.TestCase): 
+
+    def test_newline_multiple_styles(self):
+        """Test that multiple CSS styles get separated with spaces instead of newlines"""
+        html = '<style>h1 { font-weight:bold; color: red}</style><h1>Bold Red</h1>'
+        desired_output = '<h1 style="font-weight: bold; color: red">Bold Red</h1>'
+        output = Pynliner().from_string(html).run()
+        self.assertEqual(output, desired_output)
+
 if __name__ == '__main__':
     unittest.main()
